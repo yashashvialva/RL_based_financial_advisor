@@ -7,7 +7,7 @@ from finsense.models import ActionModel
 
 def get_fallback_action(obs: dict) -> ActionModel:
     """
-    Smart rule-based fallback when API fails.
+    Smart rule-based fallback when API fails or LLM returns invalid output.
     Essential → allow, semi-essential → reduce 50%, discretionary → avoid.
     """
     exp = obs.get("current_expense") or {}
@@ -37,9 +37,9 @@ Balance: {obs.get('balance', 0):.0f} | Goal Left: {obs.get('goal_remaining', 0):
 Expense: {name} | Amount: {amount:.0f} | Type: {necessity}
 
 Rules:
-- essential → allow full amount
-- semi-essential → reduce by 50%
-- discretionary → avoid
+- essential -> allow full amount
+- semi-essential -> reduce by 50%
+- discretionary -> avoid
 
 Reply ONLY with JSON: {{"decision": "allow/reduce/avoid", "approved_amount": 0.0, "reasoning": "short"}}"""
 
@@ -49,8 +49,8 @@ def run_inference():
 
     api_key = os.getenv("HF_TOKEN", "dummy_token")
     base_url = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-    #model_name = os.getenv("MODEL_NAME", "HuggingFaceTB/SmolLM2-1.7B-Instruct:nebius")
     model_name = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct:cerebras")
+
     client = OpenAI(api_key=api_key, base_url=base_url)
 
     env = FinSenseEnv()
@@ -84,6 +84,14 @@ def run_inference():
                 raw = raw.split("```")[0].strip()
 
             action_dict = json.loads(raw)
+
+            # Sanitize — ensure required fields exist with valid values
+            if action_dict.get("decision") not in ("allow", "reduce", "avoid"):
+                action_dict["decision"] = "avoid"
+            if not isinstance(action_dict.get("approved_amount"), (int, float)):
+                action_dict["approved_amount"] = 0.0
+            if "reasoning" not in action_dict:
+                action_dict["reasoning"] = "no reason provided"
 
             # Enforce essential rule — never reduce/avoid essential
             exp = obs.get("current_expense") or {}
