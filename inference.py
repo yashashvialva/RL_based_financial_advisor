@@ -49,8 +49,8 @@ def run_inference():
 
     api_key = os.getenv("HF_TOKEN", "dummy_token")
     base_url = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-    model_name = os.getenv("MODEL_NAME", "HuggingFaceTB/SmolLM2-1.7B-Instruct:nebius")
-
+    #model_name = os.getenv("MODEL_NAME", "HuggingFaceTB/SmolLM2-1.7B-Instruct:nebius")
+    model_name = os.getenv("MODEL_NAME", "HuggingFaceTB/SmolLM2-1.7B-Instruct:auto")
     client = OpenAI(api_key=api_key, base_url=base_url)
 
     env = FinSenseEnv()
