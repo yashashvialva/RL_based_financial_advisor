@@ -134,7 +134,22 @@ Each task has a separate deterministic grader returning a float in [0.0, 1.0]:
 | `/tasks` | GET | List available tasks |
 | `/health` | GET | Health check |
 
-## Quick Start
+## Standardized Quick Start (Multi-Mode)
+
+The environment is now fully compliant with OpenEnv's multi-mode deployment standards.
+
+```bash
+# 1. Install dependencies
+uv sync
+
+# 2. Run the environment server (standardized entry point)
+uv run server
+
+# 3. Verify validation
+./scripts/validate-submission.sh https://yashashvialva-finsense-rl.hf.space
+```
+
+## Legacy API Quick Start (Existing)
 
 ```bash
 # Reset environment
@@ -165,26 +180,38 @@ Running `meta-llama/Llama-3.1-8B-Instruct` via HF Inference Providers:
 
 ```
 finsense-rl/
-├── inference.py              # Baseline LLM agent loop
+├── server/                   # Multi-mode server package
+│   └── app.py                # Main entry point (server.app:main)
+├── scripts/                  # Automation & validation scripts
+│   └── validate-submission.sh # Submission pre-check tool
+├── finsense/                 # Core logic package
+│   ├── env.py                # FinSenseEnv class
+│   ├── models.py             # Pydantic models
+│   ├── server.py             # FastAPI endpoints
+│   ├── tasks.py              # Task configurations
+│   ├── expense_generator.py  # Seeded engine
+│   ├── graders.py            # Per-task graders
+│   └── reward.py             # Reward calculator
+├── inference.py              # Standardized LLM agent loop
 ├── openenv.yaml              # Task metadata
-├── Dockerfile                # Container config
-├── requirements.txt          # Dependencies
-├── README.md
-└── finsense/
-    ├── env.py                # FinSenseEnv class
-    ├── models.py             # Pydantic models
-    ├── server.py             # FastAPI server
-    ├── tasks.py              # Task configs
-    ├── expense_generator.py  # Seeded expense engine
-    ├── graders.py            # Per-task graders
-    └── reward.py             # Reward calculator
+├── Dockerfile                # HF Space container config
+├── pyproject.toml            # Build metadata & entry points
+├── requirements.txt          # Python dependencies
+└── README.md
 ```
 
 ## Setup
 
+### Using uv (Recommended)
+```bash
+uv sync
+uv run server
+```
+
+### Using pip
 ```bash
 pip install -r requirements.txt
-uvicorn finsense.server:app --host 0.0.0.0 --port 7860
+python -m server.app
 ```
 
 ## Environment Variables
@@ -193,4 +220,24 @@ uvicorn finsense.server:app --host 0.0.0.0 --port 7860
 HF_TOKEN        # Hugging Face API token (required)
 API_BASE_URL    # API endpoint (default: https://router.huggingface.co/v1)
 MODEL_NAME      # Model identifier (default: meta-llama/Llama-3.1-8B-Instruct:cerebras)
+```
+
+## Validation
+
+To ensure your submission is correct before submitting to the platform, you can run the provided validation script.
+
+### Prerequisites
+- Docker installed
+- `openenv-core` installed: `pip install openenv-core`
+
+### Running Validation
+```bash
+# Make the script executable
+chmod +x scripts/validate-submission.sh
+
+# Run validation against your Hugging Face Space
+./scripts/validate-submission.sh https://your-space.hf.space
+```
+
+**Note**: If you are on Windows, run this in a Git Bash or WSL terminal.
 ```

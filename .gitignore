@@ -32,11 +32,13 @@ Thumbs.db
 # Docker
 *.tar
  
-# Logs
+# Logs & Local Development
 *.log
+output.log
+inference_local.py
+test_api.py
  
 # Test cache
 .pytest_cache/
 .coverage
 htmlcov/
- 
