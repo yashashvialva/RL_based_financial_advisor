@@ -21,7 +21,7 @@ class StepResponse(BaseModel):
     info: Dict[str, Any]
 
 @app.post("/reset", response_model=Dict[str, Any])
-def reset_env(req: ResetRequest):
+def reset_env(req: ResetRequest = ResetRequest()):
     return env.reset(task_id=req.task_id, seed=req.seed)
 
 @app.post("/step", response_model=StepResponse)
