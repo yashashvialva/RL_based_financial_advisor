@@ -88,16 +88,10 @@ Rules:
 Reply ONLY with JSON: {{"decision": "allow/reduce/avoid", "approved_amount": 0.0, "reasoning": "short"}}"""
 
 def calculate_final_score(env, task_id):
-    """
-    Calculate the official score in [0, 1] using the task-specific grader.
-    """
-    # Need to map internal env.state to StateModel
     s = env.state
     task = TASKS.get(task_id)
     
     try:
-        # Create a simplified StateModel for the grader
-        # Note: mapping internal keys to StateModel fields
         state_data = {
             "current_day": task.days - s["days_left"],
             "total_days": task.days,
@@ -106,34 +100,33 @@ def calculate_final_score(env, task_id):
             "current_goal_remaining": s["goal_remaining"],
             "stress_level": s["stress_level"],
             "risk_level": s["risk_level"],
-            "seed": 42, # default
+            "seed": 42,
             "task_id": task_id,
             "expected_fixed_expenses": s["expected_fixed_expenses"],
             "income_shock_active": s["income_shock_active"],
             "recent_spending": s["recent_spending"],
-            "user_type": "balanced", # default or derived
-            "current_expense_idx": 0, # not critical for grading
-            "daily_expenses": [], # not critical for grading
-            "daily_expense_idx": 0, # not critical for grading
+            "user_type": "balanced",
+            "current_expense_idx": 0,
+            "daily_expenses": [],
+            "daily_expense_idx": 0,
             "terminated": s["days_left"] <= 0,
             "truncated": False
         }
         state_model = StateModel(**state_data)
-        return grade_episode(state_model)
+        raw = grade_episode(state_model)
+        # CRITICAL: always clamp, even if grader returns something unexpected
+        return max(0.0, min(1.0, raw))
     except Exception:
-        # Fallback to simple goal-based score if mapping fails
         goal_total = s["goal_total"]
         goal_remaining = s["goal_remaining"]
         goal_progress = max(0.0, goal_total - goal_remaining)
-        return min(1.0, goal_progress / max(1.0, goal_total))
-
+        raw = goal_progress / max(1.0, goal_total)
+        return max(0.0, min(1.0, raw))
 def run_inference(task_id="easy"):
     # Load environment variables
-    HF_TOKEN = os.getenv("HF_TOKEN","ollama")
-    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:11434/v1")
-    MODEL_NAME = os.getenv("MODEL_NAME", "mistral:latest")
-    # Note: LOCAL_IMAGE_NAME is required by the config but not used in library-mode
-    # LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
+    HF_TOKEN = os.getenv("HF_TOKEN")
+    API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+    MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct:cerebras")
 
     client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
 
@@ -205,7 +198,6 @@ def run_inference(task_id="easy"):
     except Exception as e:
         last_error = str(e).replace('\n', ' ')
     finally:
-        # Calculate final state metrics
         success_bool = obs.get("goal_remaining", 0) <= 0
         success_str = str(success_bool).lower()
         score = calculate_final_score(env, task_id)
@@ -214,7 +206,7 @@ def run_inference(task_id="easy"):
         # [END] line
         print(f"[END] success={success_str} steps={step_num} score={score:.2f} rewards={rewards_str}")
 
+
 if __name__ == "__main__":
-    # Standard task for benchmark is 'easy' or can be overridden by env
-    target_task = os.getenv("TASK_ID", "easy")
-    run_inference(target_task)
+    for task in ["easy", "medium", "hard"]:
+        run_inference(task)

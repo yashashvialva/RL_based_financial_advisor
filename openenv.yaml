@@ -1,16 +1,27 @@
+spec_version: 1
 name: finsense-rl
 description: "A goal-driven financial decision-making RL environment simulating Indian household budgeting."
 version: "1.0.0"
+type: environment
+runtime: docker
+app: finsense/server.py
+port: 7860
 tasks:
   - id: easy
     name: "Monthly Saver"
     difficulty: easy
+    grader_endpoint: /grade
+    score_range: [0.0, 1.0]
   - id: medium
     name: "Quarter Goal"
     difficulty: medium
+    grader_endpoint: /grade
+    score_range: [0.0, 1.0]
   - id: hard
     name: "Multi-Goal Chaos"
     difficulty: hard
+    grader_endpoint: /grade
+    score_range: [0.0, 1.0]
 observation_space:
   type: dict
   fields:
