@@ -238,6 +238,3 @@ chmod +x scripts/validate-submission.sh
 # Run validation against your Hugging Face Space
 ./scripts/validate-submission.sh https://your-space.hf.space
 ```
-
-**Note**: If you are on Windows, run this in a Git Bash or WSL terminal.
-```
